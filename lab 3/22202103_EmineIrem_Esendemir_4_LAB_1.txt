@@ -1,0 +1,374 @@
+CS224
+Lab 1
+Emine İrem Esendemir
+22202103
+11/10/2024
+
+Part3:
+	.data
+ask_B:		.asciiz "Value of B: "
+ask_A:		.asciiz "Value of A: "
+ask_D:		.asciiz "Value of D: "
+print_result: 	.asciiz "Result is: "
+
+
+	.text
+	
+	la $a0,ask_A	
+	li $v0,4	
+	syscall
+	li $v0, 5	
+	syscall
+	move $s0, $v0 #s0 -> A
+	
+	la $a0,ask_B	
+	li $v0,4	
+	syscall
+	li $v0, 5	
+	syscall
+	move $s1, $v0 #s1 -> B
+	
+	#CALCULATING
+	addi $t0, $s0, 7
+	move $t0, $v0 #t0 = A+7
+	
+	div $s0, $t0
+	mfhi $t1
+	move $t1, $v0 #t1= B%(A+7) = B % $t0
+	
+	sub $t2, $s1, $s0 # t2 = B-A
+	
+	div $t1, $t2
+	mflo $v0  #v0 = t1 / t2
+	
+	#PRINTING RESULT
+	
+	la $a0,print_result	
+	li $v0,4	
+	syscall
+	
+	move $a0, $s3
+	li $v0,1
+	syscall
+	
+	
+	li $v0,10  # system call to exit
+	syscall	#    bye bye
+	
+Part4:
+.data
+ask_element_num:   .asciiz "Enter the number of elements: "
+ask_element:       .asciiz "Enter element: "
+answer_a:       .asciiz "\nMaximum number: "
+answer_b:       .asciiz "\nThe number of occurrences of the maximum value is: "
+answer_c:       .asciiz "\nThe number of values that divide the maximum value without a remainder (excluding the maximum itself) is:"
+answer_d:       .asciiz "\nGoodbye!\n"
+new_line:	.asciiz "\n"
+menu:		.asciiz "\nHow can I help you?\na. Find the maximum number stored in the array and display that number.\nb. Find the number of times the maximum number appears in the array.\nc. Find how many numbers we have (other than the maximum number) that we can divide the maximum number without a remainder.\nd. Quit.\nEnter the char please: "
+
+	.align 4
+arr:    .space 400
+
+
+	.text
+	#s0 -> num of element, s1-> answer to a, s2-> answer to b, s3 -> answer to C
+	#s4 -> a in ascii, s5 -> b in ascii, s6 -> c in ascii
+	li $s4, 97
+	li $s5, 98
+	li $s6, 99
+	
+	
+	li $v0, 4                 # system call to print
+	la $a0, ask_element_num
+	syscall
+	
+	li $v0, 5                 # syscall 5 reads an integer
+    	syscall
+    	move $s0, $v0             # s0 -> num of elements
+    	
+    	li $t0, 0		# t0 -> index to take elements
+    	la $t1, arr             #t1 -> current addres
+    	
+    	#READING ELEMENTS
+    	reading_loop:
+    		beq $t0, $s0, reading_loop_end #if t0 == s0(n), finish
+    		li $v0, 4                 # system call to print
+   		la $a0, ask_element
+    		syscall
+    		
+    		li $v0, 5                # syscall 5 reads an integer
+    		syscall
+    		sw $v0, 0($t1) 		# storing the read int in the array
+    		addi $t1, $t1, 4
+    		addi $t0, $t0, 1          # Increment index
+    		j reading_loop
+    	reading_loop_end:
+    	
+    	#CALCULATING A
+    	li $t0, 0		# t0 -> index to take elements
+    	la $t1, arr             #t1 -> current addres
+    	lw $t2, 0($t1)		#t2 -> current value
+    	move $s1, $t2		# max is set to the first element
+    	find_max_loop:
+    		beq $t0, $s0, find_max_loop_end
+    		bgt $s1, $t2, max_not_found
+    		move $s1, $t2
+    		max_not_found:
+    		addi $t0, $t0, 1
+    		addi $t1, $t1, 4
+    		lw $t2, 0($t1)
+    		j find_max_loop
+    	find_max_loop_end:
+    	
+    	#CALCULATING B
+    	li $t0, 0		# t0 -> index to take elements
+    	la $t1, arr             #t1 -> current addres
+    	li $s2, 0
+    	lw $t2, 0($t1)		#t2 -> current value
+    	max_occurence_loop:
+    		beq $t0, $s0, max_occurence_loop_end #aaaa
+    		bne $s1, $t2, not_same
+    		addi $s2, $s2, 1
+    		not_same:
+    		addi $t0, $t0, 1
+    		addi $t1, $t1, 4
+    		lw $t2, 0($t1)		#t2 -> current value
+    		j max_occurence_loop
+    	max_occurence_loop_end:
+    	
+    	#CALCULATING C
+    	li $t0, 0		# t0 -> index to take elements
+    	la $t1, arr             #t1 -> current addres
+    	li $s3, 0
+    	rem_zero_loop:
+    		beq $t0, $s0, rem_zero_loop_end
+    		lw $t2, 0($t1)		#t2 -> current value
+    		beq $t2, $0, not_zero 
+    		div $s1, $t2
+    		mfhi $t3 # t3 -> remainder
+    		bne $t3, $0, not_zero
+    		addi $s3, $s3, 1
+    		not_zero:
+    		addi $t0, $t0, 1
+    		addi $t1, $t1, 4
+    		j rem_zero_loop
+    	rem_zero_loop_end:
+    	sub $s3, $s3, $s2
+    	
+    	#DISPLAYING MENU
+    	menu_loop:
+    		li $v0, 4                 # system call to print
+		la $a0, menu
+		syscall
+	
+		li $v0, 12
+		syscall # read char
+		move $s7, $v0 # s7 -> char is read
+	check_a:
+		bne $s7, $s4, not_a_check_b
+		
+		li $v0, 4                 # system call to print
+		la $a0, answer_a
+		syscall 
+		
+		li $v0, 1
+		move $a0, $s1
+		syscall
+		
+		li $v0, 4                 # system call to print
+		la $a0, new_line
+		syscall 
+		
+		j menu_loop
+	not_a_check_b:
+		bne $s7, $s5, not_b_check_c
+		
+		li $v0, 4                 # system call to print
+		la $a0, answer_b
+		syscall 
+		
+		li $v0, 1
+		move $a0, $s2
+		syscall
+		
+		li $v0, 4                 # system call to print
+		la $a0, new_line
+		syscall
+	
+		j menu_loop
+	not_b_check_c:
+		bne $s7, $s6, menu_loop_end
+		
+		li $v0, 4                 # system call to print
+		la $a0, answer_c
+		syscall 
+		
+		li $v0, 1
+		move $a0, $s3
+		syscall
+		
+		li $v0, 4                 # system call to print
+		la $a0, new_line
+		syscall
+		
+		j menu_loop
+	menu_loop_end:
+	
+	
+	li $v0, 4                 # system call to print
+	la $a0, answer_d
+	syscall
+    	li $v0, 10                # system call to exit
+    	syscall
+    	
+Program1:
+##
+## Program1.asm - prints out "hello world"
+##
+##	a0 - points to the string
+##
+
+#################################
+#					 	#
+#		text segment		#
+#						#
+#################################
+
+	.text		
+
+# execution starts here
+	la $a0,str	# put string address into a0
+	li $v0,4	# system call to print
+	syscall		#   out a string
+
+	li $v0,10  # system call to exit
+	syscall	#    bye bye
+
+
+#################################
+#					 	#
+#     	 data segment		#
+#						#
+#################################
+
+	.data
+str:	.asciiz "Hello TA\n"
+n:	.word	10
+
+##
+## end of file Program1.asm
+
+
+Program2:
+##
+## Program2.asm asks user for temperature in Celsius,
+##  converts to Fahrenheit, prints the result.
+##
+##	v0 - reads in Celsius
+##	t0 - holds Fahrenheit result
+##	a0 - points to output strings
+##
+
+#################################
+#					 	#
+#		text segment		#
+#						#
+#################################
+
+	.text			
+
+	la $a0,prompt	# output prompt message on terminal
+	li $v0,4	# syscall 4 prints the string
+	syscall
+
+	li $v0, 5	# syscall 5 reads an integer
+	syscall
+
+	mul $t0,$v0,9	# to convert,multiply by 9,
+	div $t0,$t0,5	# divide by 5, then
+	add $t0,$t0,32	# add 32
+
+	la $a0,ans1	# print string before result
+	li $v0,4
+	syscall
+
+	move $a0,$t0	# print integer result
+	li $v0,1		# using syscall 1
+	syscall
+
+	la $a0,endl	# system call to print
+	li $v0,4		# out a newline
+	syscall
+
+	li $v0,10		# system call to exit
+	syscall		#    bye bye
+
+
+#################################
+#					 	#
+#     	 data segment		#
+#						#
+#################################
+
+	.data
+prompt:	.asciiz "Enter temperature (Celsius): "
+ans1:	.asciiz "The temperature in Fahrenheit is "
+endl:	.asciiz "\n"
+
+##
+## end of file Program2.asm
+
+Program3:##
+##	Program3.asm is a loop implementation
+##	of the Fibonacci function
+##        
+
+#################################
+#					 	#
+#		text segment		#
+#						#
+#################################
+
+	.text	
+ 
+# execution starts here
+	li $a0,7	# to calculate fib(7)
+	jal fib		# call fib
+	move $a0,$v0	# print result
+	li $v0, 1
+	syscall
+
+	la $a0,endl	# print newline
+	li $v0,4
+	syscall
+
+	li $v0,10
+	syscall		# bye bye
+
+#------------------------------------------------
+
+
+fib:	move $v0,$a0	# initialise last element
+	blt $a0,2,done	# fib(0)=0, fib(1)=1
+
+	li $t0,0	# second last element
+	li $v0,1	# last element
+
+loop:	add $t1,$t0,$v0	# get next value
+	move $t0,$v0	# update second last
+	move $v0,$t1	# update last element
+	sub $a0,$a0,1	# decrement count
+	bgt $a0,1,loop	# exit loop when count=0
+done:	jr $ra
+
+#################################
+#					 	#
+#     	 data segment		#
+#						#
+#################################
+
+	.data
+endl:	.asciiz "\n"
+
+##
+## end of Program3.asm

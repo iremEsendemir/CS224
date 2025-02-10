@@ -1,0 +1,207 @@
+CS224
+Lab 1
+Emine İrem Esendemir
+22202103
+9/10/2024
+
+PART 1 SWAP:
+	.data
+ask_element_num:   .asciiz "Enter the number of elements: "
+ask_element:       .asciiz "Enter element: "
+show_arr_before:   .asciiz "Given array: "
+show_arr_after:    .asciiz "Swapped array: "
+new_line:	   .asciiz "\n"
+print_space:	   .asciiz " "
+
+	.align 4
+arr:    .space 80
+
+
+	.text
+	li $v0, 4                 # system call to print
+	la $a0, ask_element_num
+	syscall
+	
+	li $v0, 5                 # syscall 5 reads an integer
+    	syscall
+    	move $s0, $v0             # s0 -> num of elements
+    	
+    	li $t0, 0		# t0 -> index to take elements
+    	la $t1, arr             #t1 -> current addres
+    	
+    	#READING ELEMENTS
+    	reading_loop:
+    		beq $t0, $s0, reading_loop_end #if t0 == s0(n), finish
+    		li $v0, 4                 # system call to print
+   		la $a0, ask_element
+    		syscall
+    		
+    		li $v0, 5                # syscall 5 reads an integer
+    		syscall
+    		sw $v0, 0($t1) 		# storing the read int in the array
+    		addi $t1, $t1, 4
+    		addi $t0, $t0, 1          # Increment index
+    		j reading_loop
+    	reading_loop_end:
+    	
+    	#DISPLAYING BEFORE SWAPPING
+    	li $v0, 4                  # system call to print
+    	la $a0, show_arr_before
+    	syscall
+    	li $t0, 0		# t0 -> index of elements
+    	la $t1, arr             #t1 -> current addres
+    	show_before_swap_loop:
+    		beq $t0, $s0, show_before_swap_loop_end
+    		lw $a0, 0($t1)
+    		li $v0, 1                 # printing an integer
+    		syscall
+    		
+    		li $v0, 4                 # printing space
+    		la $a0, print_space
+    		syscall
+    		
+    		addi $t0, $t0, 1
+    		addi $t1, $t1, 4
+    		j show_before_swap_loop
+    	show_before_swap_loop_end:            
+    	li $v0, 4                 # printing new line
+    	la $a0, new_line
+    	syscall
+    		
+    	#SWAPPING
+    	li $s1, 2
+    	div $s0, $s1
+    	mflo $s1                 # s1 = n/2  (number of swap)
+    	li $t0, 0		# t0 -> index to take elements
+    	la $t1, arr             #t1 -> addres of element in the lower side
+    	
+    	subi $t3, $s0, 1 
+    	sll $t4, $t3, 2
+    	add $t2, $t4, $t1	#t2 -> address of element in the upper side   (t2=(n-1)*4+addr(arr)) 
+    	swap_loop:
+    		beq $t0, $s1, swap_loop_end
+    		#swapping
+    		lw $a0, 0($t1) 
+    		lw $a1, 0($t2)
+    		sw $a0, 0($t2)
+    		sw $a1, 0($t1)
+    		#indexes handled
+    		addi $t0, $t0, 1
+    		addi $t1, $t1, 4
+    		subi $t2, $t2, 4
+    		j swap_loop
+    	swap_loop_end:        
+    	
+    	#DISPLAYING AFTER SWAPPING
+    	li $v0, 4                  # system call to print
+    	la $a0, show_arr_after
+    	syscall
+    	li $t0, 0		# t0 -> index of elements
+    	la $t1, arr             #t1 -> current addres
+    	show_after_swap_loop:
+    		beq $t0, $s0, show_after_swap_loop_end
+    		lw $a0, 0($t1)
+    		li $v0, 1                 # printing an integer
+    		syscall
+    		
+    		li $v0, 4                 # printing space
+    		la $a0, print_space
+    		syscall
+    		
+    		addi $t0, $t0, 1
+    		addi $t1, $t1, 4	#indexes handled
+    		j show_after_swap_loop
+    	show_after_swap_loop_end:        	
+    	li $v0, 10                # system call to exit
+    	syscall
+    	
+    	
+PART 2 ArithmeticExpression:
+	.data
+ask_B:		.asciiz "Value of B: "
+ask_C:		.asciiz "Value of C: "
+ask_D:		.asciiz "Value of D: "
+print_result: 	.asciiz "Result is: "
+
+
+	.text
+	
+	la $a0,ask_B	
+	li $v0,4	
+	syscall
+	li $v0, 5	
+	syscall
+	move $s0, $v0 #s0 -> b
+	
+	la $a0,ask_C	
+	li $v0,4	
+	syscall
+	li $v0, 5	
+	syscall
+	move $s1, $v0 #s1 -> c
+	
+	la $a0,ask_D	
+	li $v0,4	
+	syscall
+	li $v0, 5	
+	syscall
+	move $s2, $v0 #s2 -> d
+	
+	#CALCULATING
+	move $a0, $s0
+	move $a1, $s1
+	jal division
+	move $t0, $v0 #t0 = B/C
+	
+	move $a0, $s2
+	move $a1, $s0
+	jal mode
+	move $t1, $v0 #t1= D%B 
+	
+			
+	add $t2, $t0, $t1 # t2 = t0 + t1
+	sub $t3, $t2, $s1 # t3 = t2 - C
+	
+	move $a0, $t3
+	move $a1, $s0
+	jal division
+	move $s3, $v0 #s3 = t3/B
+	
+	#PRINTING RESULT
+	
+	la $a0,print_result	
+	li $v0,4	
+	syscall
+	
+	move $a0, $s3
+	li $v0,1
+	syscall
+	
+	
+	li $v0,10  # system call to exit
+	syscall	#    bye bye
+	
+	
+	division: #v0->a0/a1
+    	li $v0, 0           # quotient
+    	move $t4, $a0      # t4 = dividend
+    	move $t5, $a1      # t5 = divisor
+	division_loop:
+    		blt $t4, $t5, division_loop_end #if(t4<t5), finish process
+    		sub $t4, $t4, $t5  # t4 = t4 - t5
+    		addi $v0, $v0, 1   # quotient++
+    		j division_loop
+	division_loop_end:
+    	jr $ra             
+	
+	mode: #v0-> a0%a1
+	move $t4, $a0     
+    	move $t5, $a1      
+	mode_loop:
+    		blt $t4, $t5, mode_loop_end
+   	 	sub $t4, $t4, $t5 
+    		j mode_loop
+	mode_loop_end:
+    	move $v0, $t4      
+    	jr $ra
+	

@@ -1,0 +1,155 @@
+CS224/Lab 7
+Section 4
+Emine İrem Esendemir
+18/12/2024
+
+a) 
+
+PORTE: reads push buttons
+TRISE: sets port E as input
+LATE: reads input from port E
+
+PORTA: writes data to port A
+TRISA: sets port A as output
+LATA: writes outputs to port A
+
+
+
+
+b) 
+/*
+Attention!
+Configuration  for push-button project :
+
+Connect portA to LEDs
+Jumpers of portA are : 5V, pull up ( both of the to the left side )
+
+Connect portE to push-buttons
+Jumpers of portE are : 3V3, pull up ( top one to right, other to left )
+
+*/
+
+void Wait() {
+ Delay_ms(1000);
+}
+
+void main() {
+
+ AD1PCFG = 0xFFFF;
+
+ DDPCON.JTAGEN = 0; // disable JTAG
+
+ TRISA = 0x0000;  //portA is output to turn on LEDs.
+ TRISE = 0XFFFF;  //portE is inputs to read push-buttons.
+
+ LATA = 0Xffff;
+ LATE = 0X0000;
+
+
+
+
+ while(1)
+ {
+
+  //when the button 0 is pressed but button 1 is not pressed, it waits 1 second, then portA is updated to 4 to turn the motor clockwise, then it is stopped
+  if((PORTE & 0x0003) == 0x0001){
+            Wait();
+            LATA = 0x0004;
+            Wait();
+            LATA = 0x0000;
+  }
+
+  //when the button 0 is not pressed but button 1 is pressed, it waits 1 second, then portA is updated to 2 to turn the motor counterclockwise, then it is stopped
+  else if((PORTE & 0x0003)  == 0x0002){
+            Wait();
+            LATA = 0x0002;
+            Wait();
+            LATA = 0x0000;
+  }
+//in other cases, it does not turn
+  else {
+       LATA = 0x0000;
+       }
+ }//while
+
+}//main
+
+c)
+
+PORTA: sends segment data to 7-segment.
+TRISA: sets Port A as output.  //portA is output to D ->  which segments of the display are on
+PORTE: selects active 7-segment digit.
+TRISE: sets Port E as output. //portE is output to AN -> activates specific digits on the 4-digit 7-segment display
+
+
+
+d) /*
+Configuration for the code below:
+
+Connect portA to J1 Port of 4 Digit Seven Segment Module
+Jumpers of portA are : 5V, pull down ( top one to left, other to right )
+
+Connect portE to J2 Port of 4 Digit Seven Segment Module
+Jumpers of portE are : 5V, pull down ( top one to left, other to right )
+
+*/
+
+// Hexadecimal values for digits in 7 segment
+unsigned char binary_pattern[]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F};
+
+//curr is the what is seen in the 7-segment, before is the previous value of curr
+unsigned int before = 0;
+unsigned int curr = 1;
+unsigned int i =0; // int to help time
+unsigned int dig1 = 0; //most significant digit
+unsigned int dig2 = 0;
+unsigned int dig3 = 0;
+unsigned int dig4 = 0; // least significant digit
+void main() {
+
+ AD1PCFG = 0xFFFF;      // Configure AN pins as digital I/O
+ JTAGEN_bit = 0;        // Disable JTAG
+
+ TRISA = 0x00;  //portA is output to D
+ TRISE = 0X00;  //portE is output to AN
+
+
+ while(1){
+
+//digits are calculated
+    dig1 = curr / 1000;
+    dig2 = (curr % 1000)/100;
+    dig3 = (curr % 100)/10;
+    dig4 = curr % 10;
+//shows the current value in the screen by how it is wanted in the lab document
+    while ( i < curr*100){
+     // Digit 1
+     PORTA=binary_pattern[dig1];
+     PORTE=0x01;
+     Delay_ms(1);
+
+     // Digit 2
+     PORTA=binary_pattern[dig2];    
+     PORTE=0x02;                  
+     Delay_ms(1);
+
+     // Digit 3
+     PORTA=binary_pattern[dig3];
+     PORTE=0x04;
+     Delay_ms(1);
+
+     // Digit 4
+     PORTA=binary_pattern[dig4];
+     PORTE=0x08;
+     Delay_ms(1);
+
+     i++;
+    }
+
+    curr = curr + before; // curr value is updated
+    before = curr - before; // before value is updated
+    i = 0; //loop counter is updated
+ }
+
+}//main
+

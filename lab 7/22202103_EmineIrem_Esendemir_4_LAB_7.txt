@@ -1,0 +1,160 @@
+
+CS224 / Lab 7
+Sec 4
+Emine İrem Esendemir
+22202103
+20/12/2024
+
+Part B:
+/*
+Configuration for the code below:
+
+Connect portA to J1 Port of 4 Digit Seven Segment Module
+Jumpers of portA are : 5V, pull down ( top one to left, other to right )
+
+Connect portE to J2 Port of 4 Digit Seven Segment Module
+Jumpers of portE are : 5V, pull down ( top one to left, other to right )
+
+*/
+
+// Hexadecimal values for digits in 7 segment
+unsigned char binary_pattern[]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F};
+unsigned int before = 0;
+unsigned int curr = 1;
+unsigned int i =0;
+unsigned int dig1 = 0;
+unsigned int dig2 = 0;
+unsigned int dig3 = 0;
+unsigned int dig4 = 0;
+void main() {
+
+ AD1PCFG = 0xFFFF;      // Configure AN pins as digital I/O
+ JTAGEN_bit = 0;        // Disable JTAG
+
+ TRISA = 0x00;  //portA is output to D
+ TRISE = 0X00;  //portE is output to AN
+
+
+ while(1){
+    // calculate each digit
+    dig1 = curr / 1000;
+    dig2 = (curr % 1000)/100;
+    dig3 = (curr % 100)/10;
+    dig4 = curr % 10;
+    while ( i < curr*100){
+     // Digit 1
+     PORTA=binary_pattern[dig1];
+     PORTE=0x01;
+     Delay_ms(1);
+
+     // Digit 2
+     PORTA=binary_pattern[dig2];     
+     PORTE=0x02;              
+     Delay_ms(1);
+
+     // Digit 3
+     PORTA=binary_pattern[dig3];
+     PORTE=0x04;
+     Delay_ms(1);
+
+     // Digit 4
+     PORTA=binary_pattern[dig4];
+     PORTE=0x08;
+     Delay_ms(1);
+
+     i++;
+    }
+
+    //calculate current value and reset timer
+    curr = curr + before;
+    before = curr - before;
+    i = 0;
+ }
+
+}//main
+
+
+
+
+
+Part C:
+/*
+Attention!
+Configuration  for push-button project :
+
+Connect portA to LEDs
+Jumpers of portA are : 5V, pull up ( both of the to the left side )
+
+Connect portE to push-buttons
+Jumpers of portE are : 3V3, pull up ( top one to right, other to left )
+
+*/
+
+
+
+void Wait() {
+ Delay_ms(1000);
+}
+int i;
+void main() {
+
+ AD1PCFG = 0xFFFF;
+
+ DDPCON.JTAGEN = 0; // disable JTAG
+
+ TRISA = 0x0000;  //portA is output to turn on LEDs.
+ TRISE = 0XFFFF;  //portE is inputs to read push-buttons.
+
+ LATA = 0Xffff;
+ LATE = 0X0000;
+
+
+
+
+while(1)
+{  
+  //if button 0 is pushed
+  if(PORTE.B1 == 0 && PORTE.B0 == 1){
+            Wait();
+            PORTA = 0x0004;
+            for(i = 0; i < 1000; i++){
+                  if(PORTE.B1 == 0 && PORTE.B0 == 0){
+                  PORTA = 0x0000;
+                  Wait();
+                  break;
+                  }
+                Delay_ms(1);
+              }
+            PORTA = 0x0000;
+  }
+
+
+  //if button 1 is pushed
+  else if(PORTE.B1 == 1 && PORTE.B0 == 0){
+            Wait();
+            PORTA = 0x0002;
+             for(i = 0; i < 1000; i++){
+                  if(PORTE.B1 == 0 && PORTE.B0 == 0){
+                  PORTA = 0x0000;
+                  Wait();
+                  break;
+                  }
+                Delay_ms(1);
+              }
+            PORTA = 0x0000;
+  }
+
+//if both buttons are pushed
+  else if(PORTE.B1 == 0 && PORTE.B0 == 0){
+       Wait();
+  }
+  
+  
+  
+  //any of them are pushed
+  else{
+       PORTA = 0x0000;
+       }
+
+ }//while
+}//main
